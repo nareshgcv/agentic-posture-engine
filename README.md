@@ -44,10 +44,6 @@ Run PR capability-delta analysis:
 
 ape scan . --base main
 
-Run PR capability-delta analysis against a base branch:
-
-ape scan . --base main
-
 
 
 ## Supported Frameworks & Formats
@@ -131,22 +127,23 @@ jobs:
 
 ## Default Security Rules
 
-| Rule ID | Severity | Scope | Description |
-| :--- | :--- | :--- | :--- |
-| **APE-001** | `CRITICAL` | Config | Destructive tools (`exec_shell`, `file_write`, etc.) missing mandatory human approval flag (`require_human_approval`). |
-| **APE-002** | `CRITICAL` | Config | System execution tool (`exec_shell`, `bash`, `terminal`, `cmd`) is not marked as sandboxed. |
-| **APE-003** | `HIGH` | Config | Financial/Payout tool (`stripe_refund`, `bank_transfer`, etc.) missing maximum transaction limit (`max_limit`). |
-| **APE-004** | `HIGH` | Config | Database write tool lacking an `allowed_tables` scope whitelist or `read_only` flag. |
-| **APE-005** | `HIGH` | Config | Agent runtime missing a bounded `max_steps` execution limit. |
-| **APE-006** | `CRITICAL` | Config | Sub-agent spawning tool (`spawn_agent`, `delegate_task`, etc.) lacks human approval flag. |
-| **APE-101** | `CRITICAL` | Prompt | Prompt instruction explicitly waives or overrides security guardrails (`bypass security`, `ignore approval`). |
-| **APE-102** | `HIGH` | Prompt | Unconstrained command/terminal execution permission granted in prompt instruction (`run any command`). |
-| **APE-103** | `HIGH` | Prompt | Instruction explicitly waives human confirmation for sensitive tasks (`without human approval`). |
-| **APE-104** | `MEDIUM` | Prompt | Broad file or data access directive granted in prompt instruction (`read all files`, `delete all data`). |
-| **APE-201** | `CRITICAL` | AST (Py) | Dynamic Python shell execution call detected in code (`os.system`, `subprocess.run`, `eval`, `exec`). |
-| **APE-202** | `CRITICAL` | AST (JS/TS) | Node.js `child_process` execution detected in JavaScript/TypeScript (`child_process.exec`, `spawn`). |
-| **APE-203** | `HIGH` | AST (JS/TS) | Dynamic JavaScript `eval()` execution detected in code. |
-
+| Rule ID | Severity | Category | Description / Trigger Condition | Remediation | Auto-Fixable |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **APE-001** | `CRITICAL` | Authorization / HITL | Destructive tool detected without mandatory human approval flag (`require_human_approval: true`). | Set `require_human_approval: true` for the tool. | ✅ Yes |
+| **APE-002** | `CRITICAL` | Sandbox Isolation | Shell or system execution tool (`exec_shell`, `bash`, `terminal`, `cmd`, `code_interpreter`) is not sandboxed. | Set `sandboxed: true` or restrict container scope. | ✅ Yes |
+| **APE-003** | `HIGH` | Financial Guardrails | Financial tool missing maximum transaction threshold parameter (`max_limit`). | Define a numerical threshold (e.g., `max_limit: 500`). | ✅ Yes |
+| **APE-004** | `HIGH` | Database Security | Database write/query tool missing table access whitelist (`allowed_tables`). | Define `allowed_tables: [...]` or set `read_only: true`. | ✅ Yes |
+| **APE-005** | `HIGH` | Resource Control | Agent execution loop lacks a bounded positive integer limit for `max_steps`. | Define a positive integer for `max_steps` (e.g., `max_steps: 15`). | ✅ Yes |
+| **APE-006** | `CRITICAL` | Agent Delegation | Sub-agent spawning tool (`can_spawn_agents: true`) missing human approval requirement. | Set `require_human_approval: true` on the spawning tool. | ✅ Yes |
+| **APE-007** | `MEDIUM` | Network Security | Outbound network/scraping tool (`fetch`, `scrape`) missing domain scope whitelist (`allowed_domains`). | Define `allowed_domains: [...]` to bound outbound requests. | ❌ Manual |
+| **APE-008** | `CRITICAL` | Credential Management | Hardcoded API key or secret token detected in raw text or field path (OpenAI, Anthropic, AWS, GitHub, etc.). | Extract hardcoded credentials to environment variables or secret vaults. | ❌ Manual |
+| **APE-101** | `CRITICAL` | Instruction Prompt | System prompt explicitly overrides, circumvents, or disables security guardrails. | Rewrite system prompt to remove guardrail override instructions. | ✅ Yes |
+| **APE-102** | `HIGH` | Instruction Prompt | System prompt grants unconstrained command/terminal execution permissions. | Explicitly scope allowed commands or require human-in-the-loop validation in the prompt. | ❌ Manual |
+| **APE-103** | `HIGH` | Instruction Prompt | System prompt explicitly waives human confirmation or approval checks. | Remove instruction phrases that bypass human verification steps. | ✅ Yes |
+| **APE-104** | `MEDIUM` | Instruction Prompt | System prompt grants overly broad file or database access scopes. | Narrow system instructions to specific paths, directories, or schema objects. | ❌ Manual |
+| **APE-201** | `CRITICAL` | Source Code AST | Python AST node contains raw dynamic shell invocation or code execution (`os.system`, `subprocess`, `eval`, `exec`). | Sanitize inputs and avoid raw dynamic shell invocation. | ❌ Manual |
+| **APE-202** | `CRITICAL` | Source Code AST | JavaScript/TypeScript source code contains Node.js child process execution (`child_process.exec`, `child_process.spawn`). | Use safe parameterized execution APIs. | ❌ Manual |
+| **APE-203** | `HIGH` | Source Code AST | JavaScript/TypeScript source code contains dynamic code execution (`eval()`). | Avoid dynamic `eval()` invocations. | ❌ Manual |
 
 
 ###Customizing Policy(.ape-policy.yml)
