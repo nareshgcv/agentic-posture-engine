@@ -1,5 +1,6 @@
 # 🦍 Agentic Posture Engine (APE)
 
+
 **Static Linter, Auto-Fixer, and PR Capability-Delta Analyzer for AI Agents**
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
